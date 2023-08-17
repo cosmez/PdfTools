@@ -1,0 +1,122 @@
+﻿@page "/splitPDF"
+
+
+@using CommunityToolkit.Maui.Storage
+<datalist></datalist>
+
+<div>
+    <div>
+        <label>PDF File:</label>
+        <input type="text" @bind-value="filePath" />
+        <button @onclick="HandleFilePicker">Select PDF</button>
+    </div>
+
+    <div>
+        <label>Output Location:</label>
+        <input type="text" @bind-value="folderPath" />
+        <button @onclick="HandleFolderPicker">Select Location</button>
+    </div>
+
+    <div>
+        <input id="bookmarks" type="checkbox" checked="@bookmarks" @onchange="BookMarksChange" />
+        <label for="bookmarks">Use Bookmarks</label>
+
+        <input id="OCRSheet" type="checkbox" checked="@OCR" @onchange="OCRCheckChange" />
+        <label for="OCRSheet">OCR Sheet No</label>
+
+        <input id="CreateFolders" type="checkbox" checked="@createFolders" @onchange="CreateFolderCheckChange" />
+        <label for="CreateFolders">Create Folders (Experimental)</label>
+        
+        <button @onclick="ProcessButtonClick">Process</button>
+        <button @onclick="SplitButtonClick">Split</button>
+    </div>
+
+    @*Change this grid, may be for a custom component or check for a ui design*@
+    @* <div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Order</th>
+                    <th>Page</th>
+                    <th>Level</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var forecast in forecasts)
+                {
+                    <tr>
+                        <td>@forecast.Date.ToShortDateString()</td>
+                        <td>@forecast.TemperatureC</td>
+                        <td>@forecast.TemperatureF</td>
+                        <td>@forecast.Summary</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    </div> *@
+
+    
+</div>
+
+
+
+@code{
+
+    string filePath = "";
+    string folderPath = "";
+    bool bookmarks = true;
+    bool OCR = true;
+    bool createFolders = false;
+
+
+    private async Task HandleFilePicker()
+    {
+        var file = await FilePicker.PickAsync(new PickOptions
+            {
+                FileTypes = FilePickerFileType.Pdf
+            });
+
+        if(file != null){
+            filePath = file.FullPath;
+        }
+    }
+
+
+    private async Task HandleFolderPicker()
+    {
+
+        var folder = await FolderPicker.PickAsync(default);
+        if (folder != null)
+        {
+            folderPath = folder.Folder.Path;
+        }
+    }
+
+    private void BookMarksChange(ChangeEventArgs e)
+    {
+        bookmarks = Convert.ToBoolean(e.Value);
+    }
+
+    private void OCRCheckChange(ChangeEventArgs e)
+    {
+        OCR = Convert.ToBoolean(e.Value);
+    }
+
+    private void CreateFolderCheckChange(ChangeEventArgs e)
+    {
+        createFolders = Convert.ToBoolean(e.Value);
+    }
+
+    private async Task ProcessButtonClick()
+    {
+        
+    }
+
+    private async Task SplitButtonClick()
+    {
+        
+    }
+
+}
