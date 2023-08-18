@@ -20,6 +20,7 @@ public class Pdf
         dump.NumberOfPages = reader.NumberOfPages;
         dump.Text = new ();
         dump.Annotations = new();
+        dump.Bookmarks = new();
         GetBookmarks(reader, 0,dump.Bookmarks);
         for (int page = 1; page <= reader.NumberOfPages; page++)
         {

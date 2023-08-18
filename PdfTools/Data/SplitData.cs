@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace PdfTools.Data
 {
-    internal class SplitPDF
+    internal class SplitData
     {
         public string Name { get; set; }
         public string Order { get; set; }
-        public int Page { get; set; }
-        public int Level { get; set; }
+        public string Page { get; set; }
+        public string Level { get; set; }
     }
 }

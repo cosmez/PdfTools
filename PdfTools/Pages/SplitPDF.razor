@@ -2,7 +2,12 @@
 
 
 @using CommunityToolkit.Maui.Storage
-<datalist></datalist>
+@using UglyToad.PdfPig
+@using PdfTools.IO
+@using PdfTools.Data
+
+
+@*Give some design/style to the form*@
 
 <div>
     <div>
@@ -18,21 +23,21 @@
     </div>
 
     <div>
-        <input id="bookmarks" type="checkbox" checked="@bookmarks" @onchange="BookMarksChange" />
+        <input id="bookmarks" type="checkbox" checked="@isBookmarksChecked" @onchange="BookMarksChange" />
         <label for="bookmarks">Use Bookmarks</label>
 
-        <input id="OCRSheet" type="checkbox" checked="@OCR" @onchange="OCRCheckChange" />
+        <input id="OCRSheet" type="checkbox" checked="@isOCRChecked" @onchange="OCRCheckChange" />
         <label for="OCRSheet">OCR Sheet No</label>
 
-        <input id="CreateFolders" type="checkbox" checked="@createFolders" @onchange="CreateFolderCheckChange" />
+        <input id="CreateFolders" type="checkbox" checked="@isCreateFoldersChecked" @onchange="CreateFolderCheckChange" />
         <label for="CreateFolders">Create Folders (Experimental)</label>
         
         <button @onclick="ProcessButtonClick">Process</button>
         <button @onclick="SplitButtonClick">Split</button>
     </div>
 
-    @*Change this grid, may be for a custom component or check for a ui design*@
-    @* <div>
+    @*Change this grid, may be for a custom component or check for a ui design in maui toolkit*@
+    <div>
         <table class="table">
             <thead>
                 <tr>
@@ -43,19 +48,19 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var forecast in forecasts)
+                @foreach (var pdf in PDFSplit)
                 {
                     <tr>
-                        <td>@forecast.Date.ToShortDateString()</td>
-                        <td>@forecast.TemperatureC</td>
-                        <td>@forecast.TemperatureF</td>
-                        <td>@forecast.Summary</td>
+                        <td>@pdf.Name</td> @*This one will be editable*@
+                        <td>@pdf.Order</td> @*It will have order arrows*@
+                        <td>@pdf.Page</td>
+                        <td>@pdf.Level</td>
                     </tr>
                 }
             </tbody>
         </table>
 
-    </div> *@
+    </div>
 
     
 </div>
@@ -66,9 +71,11 @@
 
     string filePath = "";
     string folderPath = "";
-    bool bookmarks = true;
-    bool OCR = true;
-    bool createFolders = false;
+    bool isBookmarksChecked = true;
+    bool isOCRChecked = true;
+    bool isCreateFoldersChecked = false;
+
+    List<SplitData> PDFSplit = new List<SplitData>();
 
 
     private async Task HandleFilePicker()
@@ -94,29 +101,124 @@
         }
     }
 
+
     private void BookMarksChange(ChangeEventArgs e)
     {
-        bookmarks = Convert.ToBoolean(e.Value);
+        isBookmarksChecked = Convert.ToBoolean(e.Value);
     }
+
 
     private void OCRCheckChange(ChangeEventArgs e)
     {
-        OCR = Convert.ToBoolean(e.Value);
+        isOCRChecked = Convert.ToBoolean(e.Value);
     }
+
 
     private void CreateFolderCheckChange(ChangeEventArgs e)
     {
-        createFolders = Convert.ToBoolean(e.Value);
+        isCreateFoldersChecked = Convert.ToBoolean(e.Value);
     }
 
-    private async Task ProcessButtonClick()
+
+    private void ProcessButtonClick()
     {
-        
+        if (!string.IsNullOrWhiteSpace(filePath) && !string.IsNullOrWhiteSpace(folderPath))
+        {
+            PDFSplit.Clear();
+
+            var dumpData = Pdf.GetPdfDump(filePath); //PdfIo.PdfDumpData(txtPDFTK.Text, txtFilename.Text);
+            var pdf = PdfDocument.Open(filePath);
+
+            foreach (var page in pdf.GetPages())
+            {
+                var bookmarks = dumpData.Bookmarks.Where(bk => bk.PageNumber == page.Number).ToList();
+
+                string name = string.Empty;
+
+                bool nameFound = false;
+
+                if (bookmarks.Count > 0 && isBookmarksChecked)
+                {
+                    var bookmark = bookmarks.OrderByDescending(bk => bk.Level).First();
+                    name = bookmark.Name;//Utils.EscapeFilename(bookmark.Name); <--Doesn't exist in the current project
+                                         // var parsedName = CadNamingParser.Parse(bookmark.Name); <--Doesn't exist in the current project
+                                         // if (parsedName != null)
+                                         // {
+                                         //     nameFound = true;
+                                         // }
+
+                }
+
+                if (!nameFound && isOCRChecked)
+                {
+                    //try to grab the sheet number from the page
+                    //     var words = Pdf.GetCornerWords(page); <--Doesn't exist in the current project
+                    //     foreach (var word in words)
+                    //     {
+                    //         var parsedCode = CadNamingParser.Parse(word.Text); <--Doesn't exist in the current project
+                    //         if (parsedCode != null)
+                    //         {
+                    //             name = $"{parsedCode.Discipline}{parsedCode.SheetNumber} {name}";
+                    //             nameFound = true;
+                    //             break;
+                    //         }
+                    //     }
+                }
+
+
+                if (!nameFound && string.IsNullOrWhiteSpace(name))
+                {
+                    name = Path.GetFileNameWithoutExtension(filePath);//Utils.EscapeFilename(Path.GetFileNameWithoutExtension(filePath)); <--Doesn't exist in the current project
+                }
+
+                SplitData split = new SplitData()
+                    {
+                        Name = name,
+                        Order = page.Number.ToString("D3"),
+                        Page = page.Number.ToString()
+                    };
+
+                PDFSplit.Add(split);
+            }
+        }
     }
+
 
     private async Task SplitButtonClick()
     {
-        
+        // btnSplit.Enabled = false;
+        // btnProcess.Enabled = false;
+
+        //Split is working
+
+        try
+        {
+            var nameDict = new Dictionary<int, string>();
+            int numberOfPages = 0;
+            for (int i = 0; i < PDFSplit.Count; i++)
+            {
+                var item = PDFSplit[i];
+                string name = item.Name;
+                string sPage = item.Page;
+                if (int.TryParse(sPage, out int page) && !nameDict.ContainsKey(page))
+                {
+                    nameDict.Add(page, name);
+                    if (page > numberOfPages) numberOfPages = page;
+                }
+            }
+
+            Split.SplitPdf(filePath, folderPath, nameDict);
+
+        }
+        catch (Exception ex)
+        {
+            //Create a custom dialog or check for dialog UI
+            // MessageBox.Show($"Error splitting {ex.Message}, trying to rollback");
+        }
+
+
+        // // btnSplit.Enabled = true;
+        // // btnProcess.Enabled = true;
     }
 
 }
