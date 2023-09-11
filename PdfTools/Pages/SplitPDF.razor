@@ -12,13 +12,13 @@
 <div>
     <div>
         <label>PDF File:</label>
-        <input type="text" @bind-value="filePath" />
+        <input type="text" @bind-value="filePath" class="form-control" readonly />
         <button @onclick="HandleFilePicker">Select PDF</button>
     </div>
 
     <div>
         <label>Output Location:</label>
-        <input type="text" @bind-value="folderPath" />
+        <input type="text" @bind-value="folderPath" class="form-control" readonly />
         <button @onclick="HandleFolderPicker">Select Location</button>
     </div>
 
@@ -38,23 +38,28 @@
 
     @*Change this grid, may be for a custom component or check for a ui design in maui toolkit*@
     <div>
-        <table class="table">
+        <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>Order</th>
                     <th>Page</th>
                     <th>Level</th>
+                    <th>Reorder</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var pdf in PDFSplit)
                 {
                     <tr>
-                        <td>@pdf.Name</td> @*This one will be editable*@
-                        <td>@pdf.Order</td> @*It will have order arrows*@
+                        <td><input type="text" class="form-control" @bind="pdf.Name" /></td>  @*This one will be editable*@
+                        <td>@pdf.Order</td> @* It will have order arrows *@
                         <td>@pdf.Page</td>
                         <td>@pdf.Level</td>
+                        <td>
+                            <button @onclick="() => MoveUp(pdf)"><i class="fas fa-arrow-up"></i></button>
+                            <button @onclick="() => MoveDown(pdf)"><i class="fas fa-arrow-down"></i></button>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -219,6 +224,40 @@
 
         // // btnSplit.Enabled = true;
         // // btnProcess.Enabled = true;
+    }
+
+
+    private void MoveUp(SplitData item)
+    {
+        int index = PDFSplit.IndexOf(item);
+        if (index > 0)
+        {
+            PDFSplit.RemoveAt(index);
+            PDFSplit.Insert(index - 1, item);
+
+            PDFSplit[index].Page = (index + 1).ToString();
+            PDFSplit[index].Order = (index + 1).ToString("D3");
+
+            PDFSplit[index - 1].Page = index.ToString();
+            PDFSplit[index - 1].Order = index.ToString("D3");
+
+        }
+    }
+
+    private void MoveDown(SplitData item)
+    {
+        int index = PDFSplit.IndexOf(item);
+        if (index < PDFSplit.Count - 1)
+        {
+            PDFSplit.RemoveAt(index);
+            PDFSplit.Insert(index + 1, item);
+
+            PDFSplit[index].Page = (index + 1).ToString();
+            PDFSplit[index].Order = (index + 1).ToString("D3");
+
+            PDFSplit[index + 1].Page = (index + 2).ToString();
+            PDFSplit[index + 1].Order = (index + 2).ToString("D3");
+        }
     }
 
 }
