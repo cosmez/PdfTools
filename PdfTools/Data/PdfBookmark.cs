@@ -9,5 +9,6 @@ public class PDfBookmark
 {
     public string Name { get; set; }
     public int PageNumber { get; set; }
-    public int Level { get; set; }
+    public string Action { get; set; }
+    public string PageCommand { get; set; }
 }

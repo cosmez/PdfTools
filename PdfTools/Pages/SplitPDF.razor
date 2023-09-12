@@ -144,7 +144,7 @@
 
                 if (bookmarks.Count > 0 && isBookmarksChecked)
                 {
-                    var bookmark = bookmarks.OrderByDescending(bk => bk.Level).First();
+                    var bookmark = bookmarks.OrderByDescending(bk => bk.PageNumber).First();
                     name = bookmark.Name;//Utils.EscapeFilename(bookmark.Name); <--Doesn't exist in the current project
                                          // var parsedName = CadNamingParser.Parse(bookmark.Name); <--Doesn't exist in the current project
                                          // if (parsedName != null)

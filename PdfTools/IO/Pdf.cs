@@ -16,11 +16,14 @@ public class Pdf
     {
         var dump = new PdfDump();
         using PdfReader reader = new PdfReader(filename);
+        var doc = new PdfDocument();
+        
         dump.Filename = filename;
         dump.NumberOfPages = reader.NumberOfPages;
         dump.Text = new ();
         dump.Annotations = new();
         dump.Bookmarks = new();
+
         GetBookmarks(reader, 0,dump.Bookmarks);
         for (int page = 1; page <= reader.NumberOfPages; page++)
         {
@@ -61,35 +64,56 @@ public class Pdf
 
     public static void GetBookmarks(PdfReader reader, int level, List<PDfBookmark> bookmarks)
     {
-        PdfDictionary catalog = reader.Catalog;
-        PdfDictionary outlines = catalog.GetAsDict(PdfName.OUTLINES);
-        if (outlines != null)
+        void RecurseBookmarks(IDictionary<string, object> bookmarkDict)
         {
-            PdfArray firstLevel = outlines.GetAsArray(PdfName.FIRST);
-            if (firstLevel != null)
+            if (bookmarkDict is not null)
             {
-                for (int i = 0; i < firstLevel.Size; i += 2)
+                if (bookmarkDict.TryGetValue("Kids", out var value))
                 {
-                    PdfDictionary current = firstLevel.GetAsDict(i);
-                    string title = current.GetAsString(PdfName.TITLE).ToString();
-                    int page = current.GetAsNumber(PdfName.P).IntValue;
-
-                    var bookmark = new PDfBookmark()
+                    var kids = value as IList<Dictionary<string, object>>;
+                    Debug.WriteLine("Sub-bookmarks:");
+                    if (kids is not null)
                     {
-                        Level = level,
-                        Name = title,
-                        PageNumber = page
-                    };
-                    bookmarks.Add(bookmark);
-                    Debug.WriteLine($"[{level}] {title} - Page {page}");
-
-                    PdfDictionary next = current.GetAsDict(PdfName.FIRST);
-                    if (next != null)
+                        foreach (var subDict in kids)
+                        {
+                            RecurseBookmarks(subDict);
+                        }
+                    }
+                }
+                else
+                {
+                    if (bookmarkDict.TryGetValue("Page", out var page) && bookmarkDict.TryGetValue("Action", out var action))
                     {
-                        GetBookmarks(reader, level++, bookmarks);
+                        var title = bookmarkDict["Title"];
+                        var removeNumbers = new System.Text.RegularExpressions.Regex(@"\D");
+
+                        string titleStr = title.ToString();
+                        int.TryParse(removeNumbers.Replace(page.ToString() ?? "0", ""), out int iPage);
+                        var pdfBookmark = new PDfBookmark()
+                        {
+                            Action = action.ToString(),
+                            PageCommand = page.ToString(),
+                            Name = titleStr,
+                            PageNumber = iPage,
+                        };
+                        bookmarks.Add(pdfBookmark);
                     }
                 }
             }
+            
+        }
+        
+        //PdfDictionary catalog = reader.Catalog;
+        
+        var sBookmarks =  SimpleBookmark.GetBookmark(reader);
+        if (sBookmarks is not null)
+        {
+            foreach (var entry in sBookmarks)
+            {
+                RecurseBookmarks(entry);
+            }
+            
+            
         }
     }
 
