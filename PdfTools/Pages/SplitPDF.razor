@@ -36,8 +36,11 @@
         <button @onclick="SplitButtonClick">Split</button>
     </div>
 
-    @*Change this grid, may be for a custom component or check for a ui design in maui toolkit*@
+    <br/>
     <div>
+        <div class="progress" style="display: @(ProgressVisible ? "block" : "none")">
+            <div class="progress-bar" role="progressbar" style="width: @ProgressPercentage%;" aria-valuenow="@ProgressPercentage" aria-valuemin="0" aria-valuemax="100">@ProgressText</div>
+        </div>
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -72,7 +75,7 @@
                     <a class="page-link" style="cursor: pointer;" tabindex="-1" @onclick="PreviousPage">Previous</a>
                 </li>
                 <li class="page-item disabled">
-                    <span class="page-link">Page @currentPage</span>
+                    <span class="page-link">Page @currentPage of @totalPages</span>
                 </li>
                 <li class="page-item @(GetItemsOnCurrentPage().Count < itemsPerPage ? "disabled" : "")">
                     <a class="page-link" style="cursor: pointer;" @onclick="NextPage">Next</a>
@@ -97,10 +100,49 @@
 
     List<SplitData> PDFSplit = new List<SplitData>();
 
+    private IProgress<PdfDumpProgress> PdfProgress;
 
 
     private int currentPage = 1;
+    private int totalPages = 1;
     private int itemsPerPage = 10;
+
+
+
+    private double ProgressPercentage = 0;
+    private string ProgressText = "";
+    private bool ProgressVisible = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        PdfProgress = new Progress<PdfDumpProgress>(ReportPdfProcessingProgress);
+    }
+
+
+
+
+
+
+    private void ReportPdfProcessingProgress(PdfDumpProgress progress)
+    {
+        double percentage = (double)progress.Page / progress.Total * 100;
+        ProgressPercentage = percentage;
+        ProgressText = $"Processing Page {progress.Page}/{progress.Total} ({percentage}% complete)";
+
+        System.Diagnostics.Debug.WriteLine(ProgressText);
+
+        ProgressVisible = true;//percentage > 0 && percentage < 100;
+
+
+        StateHasChanged();
+    }
+
+
+
+
+
+
 
     private List<SplitData> GetItemsOnCurrentPage()
     {
@@ -157,7 +199,11 @@
         {
             PDFSplit.Clear();
 
-            var dumpData = Pdf.GetPdfDump(filePath); //PdfIo.PdfDumpData(txtPDFTK.Text, txtFilename.Text);
+            PdfProgressReport(0, "Processing File", 0);
+
+            var dumpData = Pdf.GetPdfDump(filePath, false, PdfProgress);
+
+
             var pdf = PdfDocument.Open(filePath);
 
             foreach (var page in pdf.GetPages())
@@ -210,6 +256,12 @@
                     };
 
                 PDFSplit.Add(split);
+            }
+
+            if (PDFSplit.Any()){
+                var pages = (float)PDFSplit.Count() / itemsPerPage;
+                totalPages = (int)Math.Ceiling(pages);
+                // PdfProgressReport(100, "Complete", totalPages);
             }
         }
     }
@@ -301,6 +353,16 @@
         {
             currentPage++;
         }
+    }
+
+    private void PdfProgressReport(int page, string filename, int totalPercentage)
+    {
+        PdfProgress.Report(new PdfDumpProgress()
+            {
+                Page = page,
+                Filename = filename,
+                Total = totalPercentage
+            });
     }
 
 }
