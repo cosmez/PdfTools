@@ -229,17 +229,17 @@
                 if (!nameFound && isOCRChecked)
                 {
                     //try to grab the sheet number from the page
-                    //     var words = Pdf.GetCornerWords(page); <--Doesn't exist in the current project
-                    //     foreach (var word in words)
-                    //     {
-                    //         var parsedCode = CadNamingParser.Parse(word.Text); <--Doesn't exist in the current project
-                    //         if (parsedCode != null)
-                    //         {
-                    //             name = $"{parsedCode.Discipline}{parsedCode.SheetNumber} {name}";
-                    //             nameFound = true;
-                    //             break;
-                    //         }
-                    //     }
+                        var words = Pdf.GetCornerWords(page); 
+                        foreach (var word in words)
+                        {
+                            var parsedCode = CadNamingParser.Parse(word.Text);
+                            if (parsedCode != null)
+                            {
+                                name = $"{parsedCode.Discipline}{parsedCode.SheetNumber} {name}";
+                                nameFound = true;
+                                break;
+                            }
+                        }
                 }
 
 

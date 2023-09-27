@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using PdfTools.Data;
 using iTextSharp.text.pdf.parser;
+using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace PdfTools.IO;
 public class Pdf
@@ -167,5 +169,24 @@ public class Pdf
         return annotations;
     }
 
-   
+
+    public static List<Word> GetCornerWords(UglyToad.PdfPig.Content.Page page)
+    {
+        var words = page.GetWords(new NearestNeighbourWordExtractor());
+        var regionW = (page.Width / 3) * 2;
+        var regionH = page.Height / 3;
+        if (words is not null)
+        {
+            return words
+                .OrderBy(w => w.BoundingBox.Bottom)
+                .ThenBy(w => w.BoundingBox.Right)
+                .Where(word =>
+                    word.BoundingBox.Top < regionH && word.BoundingBox.Left > regionW &&
+                    word.TextOrientation == TextOrientation.Horizontal)
+                .ToList();
+        }
+
+        return new List<Word>();
+    }
+
 }
