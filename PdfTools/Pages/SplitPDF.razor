@@ -10,37 +10,67 @@
 @*Give some design/style to the form*@
 
 <div>
-    <div>
-        <label>PDF File:</label>
-        <input type="text" @bind-value="filePath" class="form-control" readonly />
-        <button @onclick="HandleFilePicker">Select PDF</button>
-    </div>
-
-    <div>
-        <label>Output Location:</label>
-        <input type="text" @bind-value="folderPath" class="form-control" readonly />
-        <button @onclick="HandleFolderPicker">Select Location</button>
-    </div>
-
-    <div>
-        <input id="bookmarks" type="checkbox" checked="@isBookmarksChecked" @onchange="BookMarksChange" />
-        <label for="bookmarks">Use Bookmarks</label>
-
-        <input id="OCRSheet" type="checkbox" checked="@isOCRChecked" @onchange="OCRCheckChange" />
-        <label for="OCRSheet">OCR Sheet No</label>
-
-        <input id="CreateFolders" type="checkbox" checked="@isCreateFoldersChecked" @onchange="CreateFolderCheckChange" />
-        <label for="CreateFolders">Create Folders (Experimental)</label>
-        
-        <button @onclick="ProcessButtonClick">Process</button>
-        <button @onclick="SplitButtonClick">Split</button>
-    </div>
-
-    <br/>
-    <div>
-        <div class="progress" style="display: @(ProgressVisible ? "block" : "none")">
-            <div class="progress-bar" role="progressbar" style="width: @ProgressPercentage%;" aria-valuenow="@ProgressPercentage" aria-valuemin="0" aria-valuemax="100">@ProgressText</div>
+    <div class ="row">
+        <div class="col-md-10 mb-2">
+            <label for="pdfFile"><strong>PDF File:</strong></label>
+            <input id="pdfFile" type="text" @bind-value="filePath" class="form-control" readonly />
         </div>
+        <div class="col-md-2 mb-2 d-flex flex-column">
+            <button @onclick="HandleFilePicker" class="btn btn-primary mt-auto">
+                Select PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-10 mb-2">
+            <label for="folderPath"><strong>Output Location:</strong></label>
+            <input id="folderPath" type="text" @bind-value="folderPath" class="form-control" readonly />
+        </div>
+        <div class="col-md-2 mb-2 d-flex flex-column">
+            <button @onclick="HandleFolderPicker" class="btn btn-primary mt-auto">
+                Select Location
+            </button>
+        </div>
+    </div>
+
+
+    <br />
+
+    <div class="row">
+        <div div class="col-md-9 mb-2">
+            <div class="mb-1">
+                <input id="bookmarks" type="checkbox" checked="@isBookmarksChecked" @onchange="BookMarksChange" />
+                <label for="bookmarks"><strong>Use Bookmarks</strong></label>
+            </div>
+
+            <div class="mb-1">
+                <input id="OCRSheet" type="checkbox" checked="@isOCRChecked" @onchange="OCRCheckChange" />
+                <label for="OCRSheet"><strong>OCR Sheet No</strong></label>
+            </div>
+
+            <div class="mb-1">
+                <input id="CreateFolders" type="checkbox" checked="@isCreateFoldersChecked" @onchange="CreateFolderCheckChange" />
+                <label for="CreateFolders"><strong>Create Folders (Experimental)</strong></label>
+            </div>
+        </div>
+
+        <div div class="col-md-3 mb-2">
+            <div class="row">
+                <div div class="col-md-6 mb-2 d-flex flex-column">
+                    <button class="btn btn-primary mt-auto" @onclick="ProcessButtonClick">Process</button>
+                </div>
+
+                <div div class="col-md-6 mb-2 d-flex flex-column">
+                    <button class="btn btn-primary mt-auto" @onclick="SplitButtonClick">Split</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div>
+
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -68,6 +98,11 @@
             </tbody>
         </table>
 
+        <div class="progress" style="display: @(ProgressVisible ? "block" : "none")">
+            <div class="progress-bar progress-bar-striped progress-bar-animated active" role="progressbar" style="width: var(--blazor-load-percentage, @ProgressPercentage%)" aria-valuenow="@ProgressPercentage" aria-valuemin="0" aria-valuemax="100">@ProgressText</div>
+        </div>
+
+        <br />
         <!-- Pagination controls -->
         <nav aria-label="Page navigation">
             <ul class="pagination">
@@ -82,7 +117,7 @@
                 </li>
             </ul>
         </nav>
-
+        
     </div>
 
     
@@ -132,7 +167,7 @@
 
         System.Diagnostics.Debug.WriteLine(ProgressText);
 
-        ProgressVisible = true;//percentage > 0 && percentage < 100;
+       ProgressVisible = percentage > 0 && percentage < 100;
 
 
         StateHasChanged();
@@ -193,15 +228,13 @@
     }
 
 
-    private void ProcessButtonClick()
+    private async void ProcessButtonClick()
     {
         if (!string.IsNullOrWhiteSpace(filePath) && !string.IsNullOrWhiteSpace(folderPath))
         {
             PDFSplit.Clear();
 
-            PdfProgressReport(0, "Processing File", 0);
-
-            var dumpData = Pdf.GetPdfDump(filePath, false, PdfProgress);
+            var dumpData = await Pdf.GetPdfDump(filePath, false, PdfProgress);
 
 
             var pdf = PdfDocument.Open(filePath);

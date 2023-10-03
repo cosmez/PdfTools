@@ -14,12 +14,12 @@ namespace PdfTools.IO;
 public class Pdf
 {
 
-    public static PdfDump GetPdfDump(string filename, bool readContents = false, IProgress<PdfDumpProgress> progress = null)
+    public static async Task<PdfDump> GetPdfDump(string filename, bool readContents = false, IProgress<PdfDumpProgress> progress = null)
     {
         var dump = new PdfDump();
         using PdfReader reader = new PdfReader(filename);
         var doc = new PdfDocument();
-        
+
         dump.Filename = filename;
         dump.NumberOfPages = reader.NumberOfPages;
         dump.Text = new ();
@@ -44,6 +44,7 @@ public class Pdf
             dump.Rotation = reader.GetPageRotation(page);
 
             if (progress != null)
+                await Task.Yield();
                 progress.Report(new PdfDumpProgress()
                 {
                     Page = page,
